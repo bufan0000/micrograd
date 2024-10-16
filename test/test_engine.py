@@ -1,5 +1,7 @@
 import torch
 from micrograd.engine import Value
+from micrograd.engine import Tensor
+import numpy as np
 
 def test_sanity_check():
 
@@ -65,3 +67,38 @@ def test_more_ops():
     # backward pass went well
     assert abs(amg.grad - apt.grad.item()) < tol
     assert abs(bmg.grad - bpt.grad.item()) < tol
+
+
+def test_tensor_simple():
+
+    a = Tensor(np.array([[-4.0, 2.0, 1.0], [5.0, -1.5, 1.4]]))
+    b = Tensor(np.array([[2.0, 3.0],[-3.0, -1.5], [1.0, -3.5]]))
+    # c = (a + b * 3).relu()
+    c = a.matmul(b * 3).relu()
+    d = c.sum()
+    d.backward()
+    amg, bmg, dmg = a, b, d
+
+    a = torch.Tensor([[-4.0, 2.0, 1.0], [5.0, -1.5, 1.4]]).double()
+    b = torch.Tensor([[2.0, 3.0],[-3.0, -1.5], [1.0, -3.5]]).double()
+    a.requires_grad = True
+    b.requires_grad = True
+    # c = (a + b * 3).relu()
+    c = torch.matmul(a, b * 3).relu()
+    d = torch.sum(c)
+    d.backward()
+    apt, bpt, dpt = a, b, d
+
+    tol = 1e-6
+    # forward pass went well
+    # assert abs(gmg.data - gpt.data.item()) < tol
+    print("simple")
+    print(dmg.data)
+    print(dpt.data)
+
+    print(amg.grad)
+    print(apt.grad)
+
+    print(bmg.grad)
+    print(bpt.grad)
+
